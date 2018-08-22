@@ -1,0 +1,68 @@
+{
+  "variables": {
+    "client_id": "{{env `ARM_CLIENT_ID`}}",
+    "client_secret": "{{env `ARM_CLIENT_SECRET`}}",
+    "resource_group": "{{env `TF_VAR_resource_group_name`}}",
+    "subscription_id": "{{env `ARM_SUBSCRIPTION_ID`}}",
+    "location": "{{env `TF_VAR_location`}}"
+  },
+  "builders": [{
+    "type": "azure-arm",
+
+    "client_id": "{{user `client_id`}}",
+    "client_secret": "{{user `client_secret`}}",
+    "subscription_id": "{{user `subscription_id`}}",
+
+    "managed_image_resource_group_name":"{{user `resource_group`}}",
+    "managed_image_name":"debian-full-ecom",
+
+    "os_type": "Linux",
+    "image_publisher": "credativ",
+    "image_offer": "Debian",
+    "image_sku": "8-backports",
+
+    "azure_tags": {
+      "source": "packer",
+      "env":"qa",
+      "costEntity":"dior",
+      "flavor":"debian-jessie,java8,fluentd,elasticsearch,mysql-client"
+    },
+
+    "location": "{{user `location`}}",
+    "vm_size": "Standard_D8s_v3"
+  }],
+  "provisioners": [
+    {
+      "destination": "/tmp",
+      "source": "livraisonscripts.tar",
+      "type": "file"
+    },
+    {
+      "inline" : [
+        "cd /tmp && tar xf livraisonscripts.tar",
+        "rm livraisonscripts.tar",
+        "mkdir -p /home/datas/livraisons/LivraisonScript",
+        "mv livraisonscripts/* /home/datas/livraisons/LivraisonScript"
+      ],
+      "type": "shell"
+    },
+    {
+      "inline": [
+        "sudo apt-get update",
+        "sudo apt-get -y install software-properties-common",
+        "sudo add-apt-repository \"deb http://ppa.launchpad.net/webupd8team/java/ubuntu xenial main\"",
+        "sudo apt-get update",
+        "sudo apt-get -y install oracle-java8-installer"
+      ]
+    }
+    {
+      "execute_command": "chmod +x {{ .Path }}; {{ .Vars }} sudo -E sh '{{ .Path }}'",
+      "inline": [
+        "/usr/sbin/waagent -force -deprovision+user && export HISTSIZE=0 && sync"
+      ],
+      "inline_shebang": "/bin/sh -x",
+      "type": "shell"
+    },
+
+  ]
+}
