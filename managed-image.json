@@ -14,7 +14,7 @@
     "subscription_id": "{{user `subscription_id`}}",
 
     "managed_image_resource_group_name":"{{user `resource_group`}}",
-    "managed_image_name":"debian-full-ecom",
+    "managed_image_name":"full-ecom-{{isotime \"2006-01-02T030405\"}}",
 
     "os_type": "Linux",
     "image_publisher": "credativ",
@@ -22,7 +22,7 @@
     "image_sku": "8-backports",
 
     "azure_tags": {
-      "source": "packer",
+      "builder": "packer",
       "env":"qa",
       "costEntity":"dior",
       "flavor":"debian-jessie,java8,fluentd,elasticsearch,mysql-client"
@@ -33,16 +33,16 @@
   }],
   "provisioners": [
     {
-      "destination": "/tmp",
+      "destination": "livraisonscripts.tar",
       "source": "livraisonscripts.tar",
       "type": "file"
     },
     {
       "inline" : [
-        "cd /tmp && tar xf livraisonscripts.tar",
+        "tar xf livraisonscripts.tar",
         "rm livraisonscripts.tar",
-        "mkdir -p /home/datas/livraisons/LivraisonScript",
-        "mv livraisonscripts/* /home/datas/livraisons/LivraisonScript"
+        "sudo mkdir -p /home/datas/livraisons/LivraisonScript",
+        "sudo mv livraisonscripts/* /home/datas/livraisons/LivraisonScript"
       ],
       "type": "shell"
     },
@@ -52,9 +52,19 @@
         "sudo apt-get -y install software-properties-common",
         "sudo add-apt-repository \"deb http://ppa.launchpad.net/webupd8team/java/ubuntu xenial main\"",
         "sudo apt-get update",
-        "sudo apt-get -y install oracle-java8-installer"
+        "echo \"oracle-java8-installer shared/accepted-oracle-license-v1-1 select true\" | sudo debconf-set-selections",
+        "sudo apt-get install -y --allow-unauthenticated oracle-java8-installer",
+        "sudo apt-get install -y --allow-unauthenticated oracle-java8-set-default"
+        ],
+      "type" : "shell"
+    },
+    {
+      "inline": [
+        "sudo apt-add-repository ppa:groovy-dev/groovy",
+        "sudo apt-get update",
+        "sudo apt-get install -y groovy"
       ]
-    }
+    },
     {
       "execute_command": "chmod +x {{ .Path }}; {{ .Vars }} sudo -E sh '{{ .Path }}'",
       "inline": [
@@ -62,7 +72,6 @@
       ],
       "inline_shebang": "/bin/sh -x",
       "type": "shell"
-    },
-
+    }
   ]
 }
